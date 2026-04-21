@@ -11,7 +11,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import { AuthService } from './auth.service';
 import { Request, Response } from 'express';
-import { AUTH_URLS, AUTH_ERRORS, AUTH_SCOPES } from './constants/auth.constants';
+import { AUTH_URLS, AUTH_ERRORS, AUTH_MESSAGES, AUTH_SCOPES } from './constants/auth.constants';
 import { REFRESH_TOKEN_EXPIRATION_DAYS } from '../refresh-token/constants/refresh-token.constants';
 
 @Controller('auth')
@@ -49,18 +49,16 @@ export class AuthController {
     }
 
     try {
-      const { user, accessToken, refreshToken } = await this.authService.handleGoogleCallback(code);
+      const { refreshToken } = await this.authService.handleGoogleCallback(code);
 
       this.setRefreshTokenCookie(res, refreshToken);
 
-      return res.status(200).json({
-        message: 'Authentication successful',
-        user,
-        accessToken,
-      });
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+      return res.redirect(`${frontendUrl}/hello`);
     } catch (error) {
       console.error(error);
-      return res.status(500).json({ error: AUTH_ERRORS.AUTH_FAILED });
+      const frontendUrl = this.configService.get<string>('FRONTEND_URL');
+      return res.redirect(`${frontendUrl}?error=auth_failed`);
     }
   }
 
@@ -79,12 +77,24 @@ export class AuthController {
       this.setRefreshTokenCookie(res, refreshToken);
 
       return res.status(200).json({
-        message: 'Tokens refreshed successfully',
+        message: AUTH_MESSAGES.TOKENS_REFRESHED,
         accessToken,
       });
     } catch (error) {
       res.clearCookie('refreshToken');
       throw new UnauthorizedException(AUTH_ERRORS.AUTH_FAILED);
     }
+  }
+
+  @Post('logout')
+  async logout(@Req() req: Request, @Res() res: Response) {
+    const refreshToken = req.cookies?.refreshToken;
+
+    if (refreshToken) {
+      await this.authService.logout(refreshToken);
+    }
+
+    res.clearCookie('refreshToken');
+    return res.status(200).json({ message: AUTH_MESSAGES.LOGGED_OUT });
   }
 }

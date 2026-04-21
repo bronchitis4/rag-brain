@@ -1,4 +1,5 @@
 import { User } from '@rag-brain/database';
+import { TokenType } from '../constants/auth.constants';
 
 export interface GoogleUserInfo {
   id: string;
@@ -28,4 +29,5 @@ export interface AuthSuccessResponse {
 export interface JwtPayload {
   sub: string;
   email: string;
+  type: TokenType;
 }

@@ -5,6 +5,7 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UsersModule } from '../users/users.module';
 import { RefreshTokenModule } from '../refresh-token/refresh-token.module';
+import { JWT_EXPIRATION_TIME } from './constants/auth.constants';
 
 @Module({
   imports: [
@@ -12,10 +13,11 @@ import { RefreshTokenModule } from '../refresh-token/refresh-token.module';
     UsersModule,
     RefreshTokenModule,
     JwtModule.registerAsync({
+      global: true,
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         secret: configService.get<string>('JWT_SECRET'),
-        signOptions: { expiresIn: '1d' },
+        signOptions: { expiresIn: JWT_EXPIRATION_TIME },
       }),
       inject: [ConfigService],
     }),

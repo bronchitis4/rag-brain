@@ -3,7 +3,7 @@ import { ConfigService } from '@nestjs/config';
 import { UsersService } from '../users/users.service';
 import { RefreshTokenService } from '../refresh-token/refresh-token.service';
 import { JwtService } from '@nestjs/jwt';
-import { AUTH_URLS, AUTH_ERRORS } from './constants/auth.constants';
+import { AUTH_URLS, AUTH_ERRORS, TokenType } from './constants/auth.constants';
 import { GoogleUserInfo, GoogleTokenResponse, JwtPayload } from './interfaces/auth.interface';
 
 @Injectable()
@@ -59,7 +59,7 @@ export class AuthService {
 
     const user = await this.usersService.findOrCreate(googleUser.email, googleUser.name);
 
-    const payload: JwtPayload = { sub: user.id, email: user.email };
+    const payload: JwtPayload = { sub: user.id, email: user.email, type: TokenType.ACCESS };
     const accessToken = await this.jwtService.signAsync(payload);
 
     const refreshToken = await this.refreshTokenService.generateRefreshToken(user.id);
@@ -75,7 +75,7 @@ export class AuthService {
     const validToken = await this.refreshTokenService.validateRefreshToken(oldRefreshToken);
     const user = validToken.user;
 
-    const payload: JwtPayload = { sub: user.id, email: user.email };
+    const payload: JwtPayload = { sub: user.id, email: user.email, type: TokenType.ACCESS };
     const accessToken = await this.jwtService.signAsync(payload);
 
     await this.refreshTokenService.revokeRefreshToken(oldRefreshToken);
@@ -85,5 +85,13 @@ export class AuthService {
       accessToken,
       refreshToken: newRefreshToken,
     };
+  }
+
+  async logout(refreshToken: string) {
+    try {
+      await this.refreshTokenService.revokeRefreshToken(refreshToken);
+    } catch {
+      // If the token is already invalid we just want to log them out
+    }
   }
 }
