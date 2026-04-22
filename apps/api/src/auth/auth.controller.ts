@@ -53,12 +53,13 @@ export class AuthController {
 
       this.setRefreshTokenCookie(res, refreshToken);
 
-      const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-      return res.redirect(`${frontendUrl}/hello`);
+      const frontendUrl =
+        this.configService.get<string>('FRONTEND_URL') || AUTH_URLS.FRONTEND_DEFAULT;
+      return res.redirect(`${frontendUrl}/login`);
     } catch (error) {
       console.error(error);
       const frontendUrl = this.configService.get<string>('FRONTEND_URL');
-      return res.redirect(`${frontendUrl}?error=auth_failed`);
+      return res.redirect(`${frontendUrl}/login?error=auth_failed`);
     }
   }
 
